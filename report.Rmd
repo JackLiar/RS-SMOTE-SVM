@@ -1,0 +1,211 @@
+---
+title: "毕业设计汇报"
+author: "王志浩"
+date: "2017年3月5日"
+output:
+  ioslides_presentation:
+    incremental: yes
+    widescreen: yes
+    transition: faster
+---
+
+<style type="text/css">
+
+body{ /* Normal  */
+   font-size: 12px;
+}
+td {  /* Table  */
+   font-size: 8px;
+}
+h1 { /* Header 1 */
+ font-size: 28px;
+ <!-- color: DarkBlue; -->
+}
+h2 { /* Header 2 */
+ font-size: 28px;
+ <!-- color: DarkBlue; -->
+}
+h3 { /* Header 3 */
+ font-size: 22px;
+ <!-- color: DarkBlue; -->
+}
+code.r{ /* Code block */
+  font-size: 20px;
+}
+pre { /* Code block */
+  font-size: 15px
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 工作概要
+
+- 文献阅读：
+    - 《支持向量机导论》：第三章核函数特征空间，第六章支持向量机
+    - 《粗糙集理论、算法与应用》：第二章粗糙集理论
+    - 《A support vector machine classifier with rough set-based feature selection for breast cancer diagnosis》（阅读、翻译、排版）
+    - 《Rough set based 1-v-1 and 1-v-r approaches to support vector machine multi-classification》
+    - 《A rough margin based support vector machine》
+- 程序编写
+    - R语言编程实现《A support vector machine classifier with rough set-based feature selection for breast cancer diagnosis》文献的实验过程
+
+# 文献阅读
+
+## 论文基本思路|《基于粗糙集特征选取的支持向量机在乳腺癌诊断的应用》
+
+- 第一部分：特征选取
+    - 使用粗糙集约简算法求出当前属性集的所有约简；
+    - 计算所有条件属性和决策属性的相关系数(Pearson/Spearman/Kendall)；
+    - 从所有约简中选取同时包含相关系数最高、最低两个属性的约简；
+- 第二部分：参数优化&模型训练
+    - 将原数据集标准化到[-1,1]区间
+    - 将原数据集以三种比例进行分层抽样：80-20%、70-30%和50-50%
+    - 设定RBF核SVM的取值范围
+    - 使用网格搜索法和五次交叉验证寻找最优的SVM参数
+
+## 论文基本思路|《Rough set based 1-v-1 and 1-v-r approaches to support vector machine multi-classification》
+
+- ![1-v-1](./figure/1.jpg)
+
+## 论文基本思路|《Rough set based 1-v-1 and 1-v-r approaches to support vector machine multi-classification》
+
+![1-v-r](./figure/2.jpg)
+
+## 论文基本思路|《Rough set based 1-v-1 and 1-v-r approaches to support vector machine multi-classification》
+
+![1-v-r](./figure/3.jpg)
+
+## 程序编写|从文件读取数据
+```{r, echo=TRUE, warning=FALSE}
+library(readr)
+bcdata <- as.data.frame(read_csv("./breast-cancer-wisconsin.csv",
+                   col_types = cols(`Bare Nuclei` = col_integer(),ID = col_skip())))
+detach("package:readr")
+```
+
+![](./figure/4.jpg)
+
+## 程序编写
+剔除有值为NA的记录，共计16条
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+bcdata <- bcdata[!is.na(bcdata$`Bare Nuclei`),]
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+names(bcdata) <- c("Clump.Thickness", "Uniformity.of.Cell.Size", "Uniformity.of.Cell.Shape",
+                  "Marginal.Adhesion", "Single.Epithelial.Cell.Size", "Bare.Nuclei",
+                  "Bland.Chromatin", "Normal.Nucleoli", "Mitoses", "Class")
+bcdata$Class[bcdata$Class == 2] <- 0
+bcdata$Class[bcdata$Class == 4] <- 1
+library(Rcpp)
+library(RoughSets)
+```
+生成决策表
+```{r, echo=TRUE}
+decision.table <- SF.asDecisionTable(dataset = bcdata, decision.attr = 10, indx.nominal = c(1:10))
+```
+计算差别矩阵
+```{r, echo=TRUE}
+disc.mat <- BC.discernibility.mat.RST(decision.table, range.object = NULL)
+```
+计算所有的约简
+```{r, echo=TRUE}
+reduct <- FS.all.reducts.computation(disc.mat)
+```
+
+## 程序编写
+
+```{r, echo=FALSE}
+reduct$decision.reduct[1:4]
+```
+
+## 程序编写
+
+计算Pearson相关系数
+```{r, echo=TRUE}
+cor.relation.table <- cor(bcdata, method = "pearson")
+```
+
+```{r, include=FALSE}
+bcdata$Class <- factor(bcdata$Class, levels=c(0, 1), labels=c(0, 1))
+```
+找出相关性最高和最低的两个属性
+```{r, echo=TRUE}
+combination.filtering.attributes <- colnames(
+    cor.relation.table)[order(cor.relation.table[,10], decreasing = TRUE)[c(2,10)]]
+combination.filtering.attributes
+```
+## 程序编写
+选出同时包含相关性最高和最低两个属性的属性集
+```{r, echo=TRUE}
+source("./fun.in.R")
+selected.reduct <- reduct$decision.reduct[sapply(reduct$decision.reduct, fun.in)]
+head(selected.reduct,2) # 选择其中的两个显示
+```
+结果与文献结果相同
+```{r, include=FALSE}
+detach("package:RoughSets")
+detach("package:Rcpp")
+rm(list=ls()[c(-1,-length(ls()))])
+```
+
+## 程序编写
+对数据集进行归一化处理
+```{r, echo=TRUE}
+source("./fun.normalize.R")
+temp <- as.list(bcdata[,-10])
+bcdata[,-10]<-as.data.frame(lapply(temp, fun.normalize))
+```
+```{r, include=FALSE}
+rm("temp","fun.normalize")
+```
+并行计算设置
+```{r, echo=TRUE, message=FALSE}
+source("./fun.classification.R")
+library(foreach)
+library(doParallel)
+cl <- makeCluster(3)
+registerDoParallel(cl)
+```
+## 程序编写
+
+使用网格搜索法和5次交叉验证寻找最优参数，三次独立实验
+```{r}
+proportion <- c(0.8, 0.7, 0.5)
+system.time(result<-foreach(i = 1:3) %do% {
+    r <- foreach(j = 1:length(proportion)) %dopar% {
+        fun.classification(proportion[j])
+    }
+})
+```
+
+## 程序编写{.smaller}
+
+上述过程具体实现 fun.classification()函数
+```{r}
+fun.classification <- function(proportion){
+    # 分层抽样
+    # 加载对数据集进行分割的函数fun.partition
+    source("./fun.partition.R")
+    ## 按比例 分割
+    temp<-fun.partition(bcdata, "Class", proportion)
+    bcdata.partition.train <- as.data.frame(temp[1])
+    bcdata.partition.test <- as.data.frame(temp[2])
+    
+    library(e1071)
+    tune.result <- tune(svm, Class~., data = bcdata.partition.train,
+                              ranges = list(gamma = 2^(seq(-15,1,by=2)), cost = 2^(seq(-5,15,by = 2))),
+                              tunecontrol = tune.control(sampling = "cross", cross=5),
+                              kernel = "polynomial"
+    )
+    predictions <- predict(tune.result$best.model, bcdata.partition.test)
+    result <- list(tune.result, predictions)
+    # table(predictions, bcdata.partition.20$Class)
+    return(result)
+}
+```
+
+# 谢谢

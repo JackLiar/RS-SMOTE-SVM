@@ -2,7 +2,7 @@ fun.classification <- function(proportion){
     # 分层抽样
     # 加载对数据集进行分割的函数fun.partition
     source("./fun.partition.R")
-    ## 80-20% 分割
+    ## 按比例 分割
     temp<-fun.partition(bcdata, "Class", proportion)
     bcdata.partition.train <- as.data.frame(temp[1])
     bcdata.partition.test <- as.data.frame(temp[2])
