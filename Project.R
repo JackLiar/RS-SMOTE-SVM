@@ -40,10 +40,14 @@ combination.filtering.attributes <- colnames(
 source("./fun.in.R")
 selected.reduct <- reduct$decision.reduct[sapply(reduct$decision.reduct, fun.in)]
 
+# 使用自定义的函数将属性集转换成
+source("./fun.switch.R")
+selected.reduct <- t(sapply(selected.reduct, fun.switch))
+
 # 删除内存中冗余的变量
 detach("package:RoughSets")
 detach("package:Rcpp")
-rm(list=ls()[c(-1,-length(ls()))])
+rm(list=ls()[ls()!="bcdata"&ls()!="selected.reduct"])
 
 
 # 数据归一化处理
@@ -62,13 +66,17 @@ library(foreach)
 library(doParallel)
 cl <- makeCluster(3)
 registerDoParallel(cl)
+rm(cl)
 
 # 输入分层抽样比例，对Class属性因子化处理
 proportion <- c(0.8, 0.7, 0.5)
 bcdata$Class <- factor(bcdata$Class, levels=c(0, 1), labels=c(0, 1))
 
-system.time(result<-foreach(i = 1:3) %do% {
-    r <- foreach(j = 1:length(proportion)) %dopar% {
-        fun.classification(proportion[j])
+system.time(result<-foreach(t = 1:3) %dopar%{
+    foreach(i = 1:length(proportion)) %dopar% {
+        foreach(j = 1:dim(selected.reduct)[1]) %dopar% {
+            fun.classification(proportion[i], selected.reduct[j,])
+            }
+        }
     }
-})
+)
