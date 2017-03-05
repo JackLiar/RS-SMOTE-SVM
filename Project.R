@@ -72,8 +72,8 @@ rm(cl)
 proportion <- c(0.8, 0.7, 0.5)
 bcdata$Class <- factor(bcdata$Class, levels=c(0, 1), labels=c(0, 1))
 
-system.time(result<-foreach(t = 1:3) %dopar%{
-    foreach(i = 1:length(proportion)) %dopar% {
+system.time(result<-foreach(t = 1:3) %do% {
+    foreach(i = 1:length(proportion)) %do% {
         foreach(j = 1:dim(selected.reduct)[1]) %dopar% {
             fun.classification(proportion[i], selected.reduct[j,])
             }

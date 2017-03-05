@@ -245,17 +245,18 @@ combination.filtering.attributes</pre>
 
 <pre class = 'prettyprint lang-r'>source(&quot;./fun.in.R&quot;)
 selected.reduct &lt;- reduct$decision.reduct[sapply(reduct$decision.reduct, fun.in)]
-head(selected.reduct,2) # 选择其中的两个显示</pre>
+source(&quot;./fun.switch.R&quot;)
+selected.reduct &lt;- t(sapply(selected.reduct, fun.switch))
+head(selected.reduct,7) # 选择其中的两个显示</pre>
 
-<pre >## $reduct10
-## [1] &quot;Bare.Nuclei&quot;             &quot;Clump.Thickness&quot;        
-## [3] &quot;Marginal.Adhesion&quot;       &quot;Mitoses&quot;                
-## [5] &quot;Uniformity.of.Cell.Size&quot;
-## 
-## $reduct11
-## [1] &quot;Bare.Nuclei&quot;                 &quot;Clump.Thickness&quot;            
-## [3] &quot;Mitoses&quot;                     &quot;Single.Epithelial.Cell.Size&quot;
-## [5] &quot;Uniformity.of.Cell.Size&quot;</pre>
+<pre >##          [,1] [,2] [,3] [,4] [,5]
+## reduct10    6    1    4    9    2
+## reduct11    6    1    9    5    2
+## reduct16    6    9    8    5    2
+## reduct17    6    7    9    5    2
+## reduct18    6    7    9    8    5
+## reduct19    6    7    4    9    3
+## reduct20    6    1    4    9    3</pre>
 
 <p>结果与文献结果相同</p>
 
@@ -265,7 +266,8 @@ head(selected.reduct,2) # 选择其中的两个显示</pre>
 
 <pre class = 'prettyprint lang-r'>source(&quot;./fun.normalize.R&quot;)
 temp &lt;- as.list(bcdata[,-10])
-bcdata[,-10]&lt;-as.data.frame(lapply(temp, fun.normalize))</pre>
+bcdata[,-10]&lt;-as.data.frame(lapply(temp, fun.normalize))
+rm(&quot;temp&quot;,&quot;fun.normalize&quot;)</pre>
 
 <p>并行计算设置</p>
 
@@ -281,35 +283,38 @@ registerDoParallel(cl)</pre>
 
 <pre class = 'prettyprint lang-r'>proportion &lt;- c(0.8, 0.7, 0.5)
 bcdata$Class &lt;- factor(bcdata$Class, levels=c(0, 1), labels=c(0, 1))
-system.time(result&lt;-foreach(i = 1:3) %do% {
-    r &lt;- foreach(j = 1:length(proportion)) %dopar% {
-        fun.classification(proportion[j])
+system.time(result&lt;-foreach(t = 1:3) %do%{
+    foreach(i = 1:length(proportion)) %do% {
+        foreach(j = 1:dim(selected.reduct)[1]) %dopar% {
+            fun.classification(proportion[i], selected.reduct[j,])
+            }
+        }
     }
-})</pre>
+)</pre>
 
 <pre >##    user  system elapsed 
-##     0.1     0.0    30.6</pre>
+##    0.28    0.03 1591.65</pre>
 
 </article></slide><slide class=''><hgroup><h2>程序编写</h2></hgroup><article  id="-6" class="smaller">
 
 <p>上述过程具体实现 fun.classification()函数</p>
 
-<pre class = 'prettyprint lang-r'>fun.classification &lt;- function(proportion){
+<pre class = 'prettyprint lang-r'>fun.classification &lt;- function(proportion, reduct){
     # 分层抽样
     # 加载对数据集进行分割的函数fun.partition
     source(&quot;./fun.partition.R&quot;)
     ## 按比例 分割
-    temp&lt;-fun.partition(bcdata, &quot;Class&quot;, proportion)
-    bcdata.partition.train &lt;- as.data.frame(temp[1])
-    bcdata.partition.test &lt;- as.data.frame(temp[2])
+    temp&lt;-fun.partition(bcdata[c(reduct,10)], &quot;Class&quot;, proportion)
+    train &lt;- as.data.frame(temp[1])
+    test &lt;- as.data.frame(temp[2])
     
     library(e1071)
-    tune.result &lt;- tune(svm, Class~., data = bcdata.partition.train,
+    tune.result &lt;- tune(svm, Class~., data = train,
                               ranges = list(gamma = 2^(seq(-15,1,by=2)), cost = 2^(seq(-5,15,by = 2))),
                               tunecontrol = tune.control(sampling = &quot;cross&quot;, cross=5),
                               kernel = &quot;polynomial&quot;
     )
-    predictions &lt;- predict(tune.result$best.model, bcdata.partition.test)
+    predictions &lt;- predict(tune.result$best.model, test)
     result &lt;- list(tune.result, predictions)
     # table(predictions, bcdata.partition.20$Class)
     return(result)
