@@ -4,15 +4,14 @@ rm(list = ls())
 # 读取数据
 library(readr)
 bcdata <- as.data.frame(read_csv("./breast-cancer-wisconsin.csv", 
-                   col_types = cols(`Bare Nuclei` = col_integer(), 
-                                    ID = col_skip())))
+                   col_types = cols(`Bare Nuclei` = col_integer(),ID = col_skip())))
 detach("package:readr")
 
 # 剔除有值为NA的记录,共计16条
 bcdata <- bcdata[!is.na(bcdata$`Bare Nuclei`),]
-#names(bcdata) <- c("Clump.Thickness", "Uniformity.of.Cell.Size", "Uniformity.of.Cell.Shape",
-#                   "Marginal.Adhesion", "Single.Epithelial.Cell.Size", "Bare.Nuclei",
-#                   "Bland.Chromatin", "Normal.Nucleoli", "Mitoses", "Class")
+names(bcdata) <- c("Clump.Thickness", "Uniformity.of.Cell.Size", "Uniformity.of.Cell.Shape",
+                  "Marginal.Adhesion", "Single.Epithelial.Cell.Size", "Bare.Nuclei",
+                  "Bland.Chromatin", "Normal.Nucleoli", "Mitoses", "Class")
 
 # 2,4转换为0,1
 bcdata$Class[bcdata$Class == 2] <- 0
@@ -26,7 +25,7 @@ library(RoughSets)
 
 # 构造决策表
 decision.table <- SF.asDecisionTable(dataset = bcdata, decision.attr = 10, indx.nominal = c(1:10))
-colnames(decision.table) <- colnames(bcdata)
+#colnames(decision.table) <- colnames(bcdata)
 
 # 计算差别矩阵
 disc.mat <- BC.discernibility.mat.RST(decision.table, range.object = NULL)
@@ -35,22 +34,23 @@ disc.mat <- BC.discernibility.mat.RST(decision.table, range.object = NULL)
 reduct <- FS.all.reducts.computation(disc.mat)
 
 # 计算协方差矩阵，并以三种不同的相关系数计算相关系数
-bcdata.cov <- cov(bcdata)
+# bcdata.cov <- cov(bcdata)
 # 相关性降序排列：Bare Nuclei，Uniformity of Cell Size，Uniformity of Cell Shape
 
-cor.relation.table <- cor(bcdata, method = "pearson")
+# cor.relation.table <- cor(bcdata, method = "pearson")
 # 相关性降序排列：Bare Nuclei，Uniformity of Cell Shape，Uniformity of Cell Size
 
-cor.relation.table <- cor(bcdata, method = "spearman")
+# cor.relation.table <- cor(bcdata, method = "spearman")
 # 相关性降序排列：Uniformity of Cell Size，Uniformity of Cell Shape，Bare Nuclei
 
-cor.relation.table <- cor(bcdata, method = "kendall")
+# cor.relation.table <- cor(bcdata, method = "kendall")
 # 相关性降序排列：Bare Nuclei，Uniformity of Cell Size，Uniformity of Cell Shape
 
 # 使用“组合过滤”策略筛选属性子集
 # 按照论文要求先计算出相关性最高和最低的两个属性，此处以和论文排序一致的pearson
 # 相关系数为参考数据
 cor.relation.table <- cor(bcdata, method = "pearson")
+bcdata$Class <- factor(bcdata$Class, levels=c(0, 1), labels=c(0, 1))
 combination.filtering.attributes <- colnames(
     cor.relation.table)[order(cor.relation.table[,10], decreasing = TRUE)
                         [c(2,10)]]
@@ -73,6 +73,7 @@ rm(list=ls()[c(-1,-length(ls()))])
 source("./fun.normalize.R")
 temp <- as.list(bcdata[,-10])
 bcdata[,-10]<-as.data.frame(lapply(temp, fun.normalize))
+# 删除内存中冗余的变量
 rm("temp","fun.normalize")
 
 # 分层抽样
@@ -90,5 +91,15 @@ bcdata.partition.30 <- as.data.frame(temp[2])
 temp<-fun.partition(bcdata, "Class", 0.5)
 bcdata.partition.50.1 <- as.data.frame(temp[1])
 bcdata.partition.50.2 <- as.data.frame(temp[2])
-# 删除冗余的函数
+# 删除内存中冗余的变量
 rm("temp","fun.partition")
+
+# 使用支持向量机分类
+library(e1071)
+system.time(model <- tune(svm, Class~., data = bcdata.partition.80,
+            ranges = list(gamma = 2^(seq(-15,1,by=2)), cost = 2^(seq(-5,15,by = 2))),
+            tunecontrol = tune.control(sampling = "cross", cross=5),
+            kernel = "polynomial"
+))
+system.time(predictions <- predict(model$best.model, bcdata.partition.20))
+table(predictions, bcdata.partition.20$Class)
