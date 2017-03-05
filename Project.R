@@ -76,30 +76,13 @@ bcdata[,-10]<-as.data.frame(lapply(temp, fun.normalize))
 # 删除内存中冗余的变量
 rm("temp","fun.normalize")
 
-# 分层抽样
-# 加载对数据集进行分割的函数fun.partition
-source("./fun.partition.R")
-## 80-20% 分割
-temp<-fun.partition(bcdata, "Class", 0.8)
-bcdata.partition.80 <- as.data.frame(temp[1])
-bcdata.partition.20 <- as.data.frame(temp[2])
-## 70-30% 分割
-temp<-fun.partition(bcdata, "Class", 0.7)
-bcdata.partition.70 <- as.data.frame(temp[1])
-bcdata.partition.30 <- as.data.frame(temp[2])
-## 50-50% 分割
-temp<-fun.partition(bcdata, "Class", 0.5)
-bcdata.partition.50.1 <- as.data.frame(temp[1])
-bcdata.partition.50.2 <- as.data.frame(temp[2])
-# 删除内存中冗余的变量
-rm("temp","fun.partition")
-
-# 使用支持向量机分类
-library(e1071)
-system.time(model <- tune(svm, Class~., data = bcdata.partition.80,
-            ranges = list(gamma = 2^(seq(-15,1,by=2)), cost = 2^(seq(-5,15,by = 2))),
-            tunecontrol = tune.control(sampling = "cross", cross=5),
-            kernel = "polynomial"
-))
-system.time(predictions <- predict(model$best.model, bcdata.partition.20))
-table(predictions, bcdata.partition.20$Class)
+# 分类计算
+source("./fun.classification.R")
+library(foreach)
+library(doParallel)
+proportion <- c(0.8, 0.7, 0.5)
+system.time(result<-foreach(i = 1:3) %do% {
+    r <- foreach(j = 1:length(proportion)) %dopar% {
+        fun.classification(proportion[j])
+    }
+})
