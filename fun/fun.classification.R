@@ -1,7 +1,7 @@
 fun.classification <- function(proportion, reduct){
     # 分层抽样
     # 加载对数据集进行分割的函数fun.partition
-    source("./fun.partition.R")
+    source("./fun/fun.partition.R")
     ## 按比例 分割
     temp<-fun.partition(bcdata[c(reduct,10)], "Class", proportion)
     train <- as.data.frame(temp[1])
@@ -13,7 +13,7 @@ fun.classification <- function(proportion, reduct){
                               tunecontrol = tune.control(sampling = "cross", cross=5),
                               kernel = "polynomial"
     )
-    predictions <- predict(tune.result$best.model, test)
+    predictions <- predict(tune.result$best.model, test, decision.values = T)
     result <- list(tune.result, predictions)
     # table(predictions, bcdata.partition.20$Class)
     return(result)

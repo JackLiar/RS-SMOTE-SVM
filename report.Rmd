@@ -94,7 +94,7 @@ detach("package:readr")
 bcdata <- bcdata[!is.na(bcdata$`Bare Nuclei`),]
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, include=FALSE}
 names(bcdata) <- c("Clump.Thickness", "Uniformity.of.Cell.Size", "Uniformity.of.Cell.Shape",
                   "Marginal.Adhesion", "Single.Epithelial.Cell.Size", "Bare.Nuclei",
                   "Bland.Chromatin", "Normal.Nucleoli", "Mitoses", "Class")
@@ -137,9 +137,9 @@ combination.filtering.attributes
 ## 程序编写
 选出同时包含相关性最高和最低两个属性的属性集
 ```{r, echo=TRUE}
-source("./fun.in.R")
+source("./fun/fun.in.R")
 selected.reduct <- reduct$decision.reduct[sapply(reduct$decision.reduct, fun.in)]
-source("./fun.switch.R")
+source("./fun/fun.switch.R")
 selected.reduct <- t(sapply(selected.reduct, fun.switch))
 head(selected.reduct,7) # 选择其中的两个显示
 ```
@@ -153,14 +153,14 @@ rm(list=ls()[ls()!="bcdata"&ls()!="selected.reduct"])
 ## 程序编写
 对数据集进行归一化处理
 ```{r, echo=TRUE}
-source("./fun.normalize.R")
+source("./fun/fun.normalize.R")
 temp <- as.list(bcdata[,-10])
 bcdata[,-10]<-as.data.frame(lapply(temp, fun.normalize))
 rm("temp","fun.normalize")
 ```
 并行计算设置
 ```{r, echo=TRUE, message=FALSE}
-source("./fun.classification.R")
+source("./fun/fun.classification.R")
 library(foreach)
 library(doParallel)
 cl <- makeCluster(3)
@@ -189,8 +189,8 @@ system.time(result<-foreach(t = 1:3) %do%{
 fun.classification <- function(proportion, reduct){
     # 分层抽样
     # 加载对数据集进行分割的函数fun.partition
-    source("./fun.partition.R")
-    ## 按比例 分割
+    source("./fun/fun.partition.R")
+    ## 按比例分割
     temp<-fun.partition(bcdata[c(reduct,10)], "Class", proportion)
     train <- as.data.frame(temp[1])
     test <- as.data.frame(temp[2])

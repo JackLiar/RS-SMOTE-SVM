@@ -1,4 +1,4 @@
-setwd("D:/Documents/Code/R/RoughSetStudy")
+setwd("D:/Documents/Code/R/RS_SVM")
 rm(list = ls())
 
 # 读取数据
@@ -37,11 +37,11 @@ combination.filtering.attributes <- colnames(
     cor.relation.table)[order(cor.relation.table[,10], decreasing = TRUE)[c(2,10)]]
 
 # 使用定义的函数筛选出包含相关性最高和最低两个属性的属性集
-source("./fun.in.R")
+source("./fun/fun.in.R")
 selected.reduct <- reduct$decision.reduct[sapply(reduct$decision.reduct, fun.in)]
 
 # 使用自定义的函数将属性集转换成
-source("./fun.switch.R")
+source("./fun/fun.switch.R")
 selected.reduct <- t(sapply(selected.reduct, fun.switch))
 
 # 删除内存中冗余的变量
@@ -53,7 +53,7 @@ rm(list=ls()[ls()!="bcdata"&ls()!="selected.reduct"])
 # 数据归一化处理
 # 此处不知原文使用何种方法标准化到[-1,1]区间，故使用数据-中位数/最大最小平方和的
 # 方式进行归一化
-source("./fun.normalize.R")
+source("./fun/fun.normalize.R")
 temp <- as.list(bcdata[,-10])
 bcdata[,-10]<-as.data.frame(lapply(temp, fun.normalize))
 
@@ -61,7 +61,7 @@ bcdata[,-10]<-as.data.frame(lapply(temp, fun.normalize))
 rm("temp","fun.normalize")
 
 # 分类计算
-source("./fun.classification.R")
+source("./fun/fun.classification.R")
 library(foreach)
 library(doParallel)
 cl <- makeCluster(3)
@@ -72,7 +72,7 @@ rm(cl)
 proportion <- c(0.8, 0.7, 0.5)
 bcdata$Class <- factor(bcdata$Class, levels=c(0, 1), labels=c(0, 1))
 
-system.time(result<-foreach(t = 1:3) %do% {
+system.time(result<-foreach(t = 1:1) %do% {
     foreach(i = 1:length(proportion)) %do% {
         foreach(j = 1:dim(selected.reduct)[1]) %dopar% {
             fun.classification(proportion[i], selected.reduct[j,])
