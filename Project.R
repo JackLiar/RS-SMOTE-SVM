@@ -40,7 +40,7 @@ combination.filtering.attributes <- colnames(
 source("./fun/fun.in.R")
 selected.reduct <- reduct$decision.reduct[sapply(reduct$decision.reduct, fun.in)]
 
-# 使用自定义的函数将属性集转换成
+# 使用自定义的函数将属性集转换成列号
 source("./fun/fun.switch.R")
 selected.reduct <- t(sapply(selected.reduct, fun.switch))
 
@@ -48,7 +48,6 @@ selected.reduct <- t(sapply(selected.reduct, fun.switch))
 detach("package:RoughSets")
 detach("package:Rcpp")
 rm(list=ls()[ls()!="bcdata"&ls()!="selected.reduct"])
-
 
 # 数据归一化处理
 # 此处不知原文使用何种方法标准化到[-1,1]区间，故使用数据-中位数/最大最小平方和的
@@ -71,12 +70,25 @@ rm(cl)
 # 输入分层抽样比例，对Class属性因子化处理
 proportion <- c(0.8, 0.7, 0.5)
 bcdata$Class <- factor(bcdata$Class, levels=c(0, 1), labels=c(0, 1))
+# 循环次数
+n <- 12
 
-system.time(result<-foreach(t = 1:1) %do% {
+system.time(result<-foreach(t = 1:n) %do% {
     foreach(i = 1:length(proportion)) %do% {
         foreach(j = 1:dim(selected.reduct)[1]) %dopar% {
-            fun.classification(proportion[i], selected.reduct[j,])
+            fun.classification(bcdata, proportion[i], selected.reduct[j,])
             }
         }
     }
 )
+save.image("./result.RData")
+
+# 找出性能最好的一次计算结果
+source("./fun/fun.find_best_parameters.R")
+best.iter<-fun.find_best_parameters(result,c(n,length(proportion),dim(selected.reduct)[1]))
+best.result <- result[[best.iter[1]]][[best.iter[2]]][[best.iter[3]]]
+ 
+# Rough Margin Based SVM
+source("./fun/fun.rough_margin_based_SVM.R")
+test <- fun.rough_margin_based_SVM(bcdata[, c(selected.reduct[best.iter[3],], 10)],
+                                   best.result)

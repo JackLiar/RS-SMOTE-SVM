@@ -6,11 +6,11 @@ fun.partition <- function(df, strataname, proportion){
     class.num <- c(sum(df$Class==0),sum(df$Class==1))
     partition.table <- strata(
         df, strataname, size =c(proportion*class.num[1],
-                                proportion*class.num[2]),method="srswor")
-    df.partition.1 <- df[order(partition.table$ID_unit),]
-    df.partition.2 <- df[-order(partition.table$ID_unit),]
-    rownames(df.partition.1) <- c(1:dim(df.partition.1)[1])
-    rownames(df.partition.2) <- c(1:dim(df.partition.2)[1])
-    return(list(df.partition.1,df.partition.2))
+                                proportion*class.num[2]), method="srswor")
+    train.id <- partition.table$ID_unit[order(partition.table$ID_unit)] # 训练集id
+    df.partition.1 <- df[train.id, ]   # 训练集
+    df.partition.2 <- df[-train.id, ]  # 测试集
+    
+    return(list(df.partition.1, df.partition.2, train.id))
     detach("package:sampling")
 }
