@@ -92,3 +92,16 @@ best.result <- result[[best.iter[1]]][[best.iter[2]]][[best.iter[3]]]
 source("./fun/fun.rough_margin_based_SVM.R")
 test <- fun.rough_margin_based_SVM(bcdata[, c(selected.reduct[best.iter[3],], 10)],
                                    best.result)
+
+Table <- table(test$Class, test$prediction.svm)
+
+TP <- Table[4]
+TN <- Table[1]
+FP <- Table[3]
+FN <- Table[2]
+
+TPR <- TP/(TP+FN)
+TNR <- TN/(TN+FP)
+precision <- TP/(FP+TP)
+(G_mean <- sqrt(TPR*TNR))
+(F_measure <- 2*TPR*precision/(TPR+precision))

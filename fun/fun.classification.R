@@ -13,7 +13,7 @@ fun.classification <- function(data, proportion, reduct){
         tune(svm, Class~., data = train,
              ranges = list(gamma = 2^(seq(-15,1,by=2)), cost = 2^(seq(-5,15,by = 2))),
              tunecontrol = tune.control(sampling = "cross", cross=5),
-             kernel = "polynomial"
+             kernel = "radial"
              )
     # predictions <- predict(tune.result$best.model, test, decision.values = T)
     # test<-cbind(test, predictions, attr(predictions, "decision.values"))
