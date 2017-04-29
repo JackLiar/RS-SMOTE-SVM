@@ -3,9 +3,9 @@ rm(list = ls())
 
 # 读取数据
 library(readr)
-cdata <- read_csv(
+cdata <- as.data.frame(read_csv(
     "D:/Documents/Code/Data_Science/Bachelor_Graduation/RS_SVM/Credit_Data_Cleaned.csv",
-    col_types = cols(Loan_Time = col_date(format = "%Y-%m-%d"), X1 = col_skip()))
+    col_types = cols(Loan_Time = col_date(format = "%Y-%m-%d"), X1 = col_skip())))
 detach("package:readr")
 
 # 剔除有值为NA的记录,共计16条
@@ -78,7 +78,7 @@ disc.mat <- BC.discernibility.mat.RST(decision.table, range.object = NULL)
 # 计算约简(共计20个约简)，因此无需使用遗传算法计算约简
 reduct <- FS.all.reducts.computation(disc.mat)
 
-     # 使用“组合过滤”策略筛选属性子集
+# 使用“组合过滤”策略筛选属性子集
 # 按照论文要求先计算出相关性最高和最低的两个属性，此处以和论文排序一致的pearson
 # 相关系数为参考数据
 cor.relation.table <- cor(cdata, method = "pearson")
