@@ -7,7 +7,6 @@ fun.rough_margin_based_SVM <- function(data, best){
     
     source("./fun/fun.calc_rough_margin.Credit.R")
     rough.margin <- fun.calc_rough_margin(train)
-    print(rough.margin)
     
     library(Rcpp)
     library(e1071)
