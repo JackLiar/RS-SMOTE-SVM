@@ -44,6 +44,8 @@ cor.relation.table <- cor(cdata, method = "pearson")
 combination.filtering.attributes <- colnames(
     cor.relation.table)[order(cor.relation.table[,20], decreasing = TRUE)[c(2,20)]]
 
+save.image("./before_select.RData")
+
 # 使用定义的函数筛选出包含相关性最高和最低两个属性的属性集
 source("./fun/fun.in.R")
 selected.reduct <- reduct$decision.reduct[sapply(reduct$decision.reduct, fun.in)]
@@ -55,8 +57,12 @@ selected.reduct <- t(sapply(selected.reduct, fun.switch))
 # 删除内存中冗余的变量
 detach("package:RoughSets")
 detach("package:Rcpp")
-rm(list=ls()[ls()!="cdata"&ls()!="selected.reduct"])
+
+
+# selected.reduct[[length(selected.reduct)+1]] <- c(1,3:6,10,12,13,19)
+# selected.reduct[[length(selected.reduct)+1]] <- order(cor.relation.table[,20], decreasing = TRUE)[c(2:11)]
 selected.reduct[[length(selected.reduct)+1]] <- c(1:19)
+rm(list=ls()[ls()!="cdata"&ls()!="selected.reduct"&ls()!="reduct"])
 
 # 将获得的约简写入 reduct.txt
 if (file.exists("./reduct.txt"))

@@ -111,7 +111,7 @@ rm("temp","fun.normalize")
 save.image("./before_classification.RData")
 
 # 分类计算
-source("./fun/fun.classification.Credit.R")
+source("./fun/fun.classification.R")
 library(foreach)
 library(doParallel)
 cl <- makeCluster(3)
