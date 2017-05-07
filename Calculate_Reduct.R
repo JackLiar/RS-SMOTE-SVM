@@ -21,6 +21,16 @@ cdata$Loan_Time_Mon <- Loan_Time$mon
 cdata <- cdata[,-20]
 rm(Loan_Time)
 
+# # 数据factorize
+# source("./fun/fun.quantile.factorize.R")
+# 
+# Age.seq <- quantile(cdata$Age, seq(0,1,0.2))
+# cdata$Age <- fun.quantile.factorize(cdata$Age, Age.seq)
+# 
+# Current_Job_Working_Years.seq <- quantile(cdata$Current_Job_Working_Years, seq(0,1,1/4))
+# cdata$Current_Job_Working_Years <- fun.quantile.factorize(
+#     cdata$Current_Job_Working_Years, Current_Job_Working_Years.seq)
+
 Client_Category <- cdata$Client_Category
 cdata <- cdata[,c(-1, -19)]
 cdata <- cbind(cdata, Client_Category)
@@ -60,7 +70,7 @@ detach("package:Rcpp")
 
 
 # selected.reduct[[length(selected.reduct)+1]] <- c(1,3:6,10,12,13,19)
-# selected.reduct[[length(selected.reduct)+1]] <- order(cor.relation.table[,20], decreasing = TRUE)[c(2:11)]
+selected.reduct[[length(selected.reduct)+1]] <- order(cor.relation.table[,20], decreasing = TRUE)[c(2:11)]
 selected.reduct[[length(selected.reduct)+1]] <- c(1:19)
 rm(list=ls()[ls()!="cdata"&ls()!="selected.reduct"&ls()!="reduct"])
 

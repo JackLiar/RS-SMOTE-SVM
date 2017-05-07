@@ -13,7 +13,8 @@ import os
 import pandas as pd
 import re # 正则表达式模块
 from sklearn.decomposition import PCA
-#from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 import subprocess
 import time
 
@@ -37,39 +38,36 @@ cdata = cdata[cdata.columns[0:19]]
 cdata['Loan_Amount'] = cdata['Loan_Amount']/10000
 cdata[['Monthly_Interest_Rate','Breach_Monthly_Interest_Rate']] = cdata[['Monthly_Interest_Rate','Breach_Monthly_Interest_Rate']]*100
 
-# 使用SMOTE算法生成样本
-cdata_res, cdata_class_res = SMOTE(kind = 'svm', ratio=1.0).fit_sample(cdata, cdata_class)
-
-# 将数据映射到二维平面以供可视化
-pca = PCA(n_components = 2)
-cdata_vis = pca.fit_transform(cdata)
-cdata_res_vis = pca.fit_transform(cdata_res)
-
-# 绘制分布图
-def plot_resampling(ax, X, y, title):
-    c0 = ax.scatter(X[np.array(y == 0, dtype=bool), 0], X[np.array(y == 0, dtype=bool), 1], label="Class #0", alpha=0.5)
-    c1 = ax.scatter(X[np.array(y == 1, dtype=bool), 0], X[np.array(y == 1, dtype=bool), 1], label="Class #1", alpha=0.5)
-    ax.set_title(title)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.get_xaxis().tick_bottom()
-    ax.get_yaxis().tick_left()
-    ax.spines['left'].set_position(('outward', 10))
-    ax.spines['bottom'].set_position(('outward', 10))
-    ax.set_xlim([X[:,0].min()-10, X[:,0].max()+10])# 横轴范围
-    ax.set_ylim([X[:,1].min()-20, X[:,1].max()+20])# 纵轴范围
-
-    return c0, c1
-
-f, (ax1, ax2) = plt.subplots(2, 1)
-c0, c1 = plot_resampling(ax1, cdata_vis, cdata_class, 'Original set')
-
-plot_resampling(ax2, cdata_res_vis, cdata_class_res,'SMOTE {}'.format('svm'))
-ax1.legend((c0, c1), ('Class #0', 'Class #1'), loc=1, ncol=1, labelspacing=0.)
-
-plt.tight_layout()
-plt.show()
-f.savefig('Credit_Data_SMOTE.pdf')
+## 将数据映射到二维平面以供可视化
+#pca = PCA(n_components = 2)
+#cdata_vis = pca.fit_transform(cdata)
+#cdata_res_vis = pca.fit_transform(cdata_res)
+#
+## 绘制分布图
+#def plot_resampling(ax, X, y, title):
+#    c0 = ax.scatter(X[np.array(y == 0, dtype=bool), 0], X[np.array(y == 0, dtype=bool), 1], label="Class #0", alpha=0.5)
+#    c1 = ax.scatter(X[np.array(y == 1, dtype=bool), 0], X[np.array(y == 1, dtype=bool), 1], label="Class #1", alpha=0.5)
+#    ax.set_title(title)
+#    ax.spines['top'].set_visible(False)
+#    ax.spines['right'].set_visible(False)
+#    ax.get_Xaxis().tick_bottom()
+#    ax.get_yaxis().tick_left()
+#    ax.spines['left'].set_position(('outward', 10))
+#    ax.spines['bottom'].set_position(('outward', 10))
+#    ax.set_Xlim([X[:,0].min()-10, X[:,0].max()+10])# 横轴范围
+#    ax.set_ylim([X[:,1].min()-20, X[:,1].max()+20])# 纵轴范围
+#
+#    return c0, c1
+#
+#f, (ax1, ax2) = plt.subplots(2, 1)
+#c0, c1 = plot_resampling(ax1, cdata_vis, cdata_class, 'Original set')
+#
+#plot_resampling(ax2, cdata_res_vis, cdata_class_res,'SMOTE {}'.format('svm'))
+#ax1.legend((c0, c1), ('Class #0', 'Class #1'), loc=1, ncol=1, labelspacing=0.)
+#
+#plt.tight_layout()
+#plt.show()
+#f.savefig('Credit_Data_SMOTE.pdf')
 
 # 从reduct.txt读取属性约简
 Reducts = []
@@ -82,22 +80,30 @@ with open("./reduct.txt", 'r') as f:
 #Reducts = Reducts[14:]
 Reducts_len = len(Reducts)
 
-# 数据标准化
-from sklearn.preprocessing import StandardScaler
-
-scaler = StandardScaler()
-cdata_res = scaler.fit_transform(cdata_res)
-cdata = cdata_res[0:len(cdata)]
-
 # 加载寻找最优属性约简模块
-from reduct_tuning import reduct_tuning
+from rs_reduct_tuning import reduct_tuning
 
-result ,T= [] , 10
+result ,T= [] , 100
 start = time.time()
 for i in range(T):
+    # 分割训练集数据集
+    cd_train_X, cd_test_X, cd_train_y, cd_test_y = train_test_split(cdata, cdata_class, test_size=0.5)
+
+    # 使用SMOTE算法生成样本
+    cd_train_res_X, cd_train_res_y = SMOTE(kind = 'svm', ratio=1.0).fit_sample(cd_train_X, cd_train_y)
+    
+    # 数据标准化
+    len_temp = len(cd_train_res_y)
+    temp =  np.concatenate((cd_train_res_X, np.array(cd_test_X)), axis = 0)
+    scaler = StandardScaler()
+    temp = scaler.fit_transform(temp)
+
+    cd_train_res_X = temp[0:len_temp]
+    cd_test_X = temp[len_temp:]
+    
     print(i)
     result.append(reduct_tuning(
-            Reducts, cdata_res, cdata_class_res, 5))
+            Reducts, cd_train_res_X, cd_train_res_y,cd_test_X, cd_test_y, 5))
 end = time.time()
 print("总用时为：", end - start)
 
