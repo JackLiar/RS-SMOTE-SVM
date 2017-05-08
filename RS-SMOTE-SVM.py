@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-SVM.py
+RS-SMOTE-SVM.py
 
 Created on Sat Mar 25 19:19:05 2017
 
@@ -77,42 +77,49 @@ with open("./reduct.txt", 'r') as f:
     else:
         f.close()
         del line
-#Reducts = Reducts[14:]
+#Reducts = Reducts[30:]
 Reducts_len = len(Reducts)
 
 # 加载寻找最优属性约简模块
 from rs_reduct_tuning import reduct_tuning
 
-result ,T= [] , 100
+result ,T= [] , 20
 start = time.time()
 for i in range(T):
+    
+    # 使用SMOTE算法生成样本
+    cd_train_res_X, cd_train_res_y = SMOTE(kind = 'svm').fit_sample(cdata, cdata_class)
+
+    # 数据标准化
+    cd_train_res_X_scaled = StandardScaler().fit_transform(cd_train_res_X)
+    del cd_train_res_X
+    cd_train_res_X_scaled = pd.DataFrame(cd_train_res_X_scaled)  # 转换成DataFrame方便处理
+    cd_train_res_y = pd.Series(cd_train_res_y)  # 转换成Series方便处理
     # 分割训练集数据集
     cd_train_X, cd_test_X, cd_train_y, cd_test_y = train_test_split(cdata, cdata_class, test_size=0.5)
-
-    # 使用SMOTE算法生成样本
-    cd_train_res_X, cd_train_res_y = SMOTE(kind = 'svm', ratio=1.0).fit_sample(cd_train_X, cd_train_y)
+    while sum(cd_train_y) <= 5 or sum(cd_train_y) >= 18:
+        cd_train_X, cd_test_X, cd_train_y, cd_test_y = train_test_split(cdata, cdata_class, test_size=0.5)
     
-    # 数据标准化
-    len_temp = len(cd_train_res_y)
-    temp =  np.concatenate((cd_train_res_X, np.array(cd_test_X)), axis = 0)
-    scaler = StandardScaler()
-    temp = scaler.fit_transform(temp)
-
-    cd_train_res_X = temp[0:len_temp]
-    cd_test_X = temp[len_temp:]
+    cd_train_X = cd_train_res_X_scaled.iloc[
+        cd_train_res_y.index.difference(cd_test_y.index)]
+    cd_train_y = cd_train_res_y.iloc[cd_train_res_y.index.difference(cd_test_y.index)]
+    cd_test_X = cd_train_res_X_scaled.iloc[cd_test_y.index]
     
-    print(i)
+
+    print(i+1)
     result.append(reduct_tuning(
-            Reducts, cd_train_res_X, cd_train_res_y,cd_test_X, cd_test_y, 5))
+            Reducts, cd_train_X, cd_train_y, cd_test_X, cd_test_y, 5))
 end = time.time()
 print("总用时为：", end - start)
 
+Time = []
 precisions = []
 recalls = []
 f1_scores = []
 
 for i in result:
     for j in i:
+        Time.append(j[0])
         precisions.append(j[1])
         recalls.append(j[2])
         f1_scores.append(j[3])
@@ -125,9 +132,15 @@ def reshape_std(x):
     '''将三种指标的一维数组转换成二维数组，并计算每一行的方差'''
     return (np.array(x).reshape(T, Reducts_len)).std(axis=0)
 
+def reshape_sum(x):
+    '''将三种指标的一维数组转换成二维数组，并计算每一行的方差'''
+    return (np.array(x).reshape(T, Reducts_len)).sum(axis=0)
+
 precisions_mean, recalls_mean, f1_scores_mean = [reshape_mean(x) for x in [precisions, recalls, f1_scores]]
 
 precisions_std, recalls_std, f1_scores_std = [reshape_std(x) for x in [precisions, recalls, f1_scores]]
+
+Time_sum = reshape_sum(Time)
 
 def print_best_score(flag, x_name, x):
     '''输出每种指标的最大值和最大值的索引'''
@@ -148,5 +161,5 @@ for i,j in {'Std of Precisions': precisions_std, 'Std of Reaclls': recalls_std, 
 temp = np.array([[0,0],
                  [0,0]])
 for i in result:
-    temp = temp + i[Reducts_len-1][4]
+    temp = temp + i[30][4]
 print(temp/T)

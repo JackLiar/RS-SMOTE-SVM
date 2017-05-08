@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+SVM.py
+
 Created on Sun May  7 10:47:25 2017
 
 @author: jack
@@ -48,8 +50,8 @@ cdata = scaler.fit_transform(cdata)
 
 def svm_tuning(X, y, nfolds):
     '''使用grid search 和 K-Fold validation 寻找最优参数'''
-    Cs = [pow(10, c) for c in range(-4,1)]
-    gammas = [pow(10, gamma) for gamma in range(-4,1)]
+    Cs = [pow(2, c) for c in range(-4,5)]
+    gammas = [pow(2, gamma) for gamma in range(-4,0)]
     param_grid = {'C': Cs, 'gamma' : gammas}
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5)
@@ -66,7 +68,7 @@ def svm_tuning(X, y, nfolds):
 #          % (grid_search.best_params_, grid_search.best_score_))
     return [grid_search, precision_score(y_test, test_y_predict), recall_score(y_test, test_y_predict), f1_score(y_test, test_y_predict), confusion_matrix(y_test, test_y_predict)]
 
-result ,T= [] , 100
+result ,T= [] , 20
 start = time.time()
 for i in range(T):
     print(i)
@@ -84,5 +86,8 @@ for i in result:
         f1_scores.append(i[3])
         
 print("Mean of precisions:", np.mean(precisions))
+print("Std of precisions:", np.std(precisions))
 print("Mean of recalls:", np.mean(recalls))
+print("Std of recalls:", np.std(recalls))
 print("Mean of f1_scores:", np.mean(f1_scores))
+print("Std of f1_scores:", np.std(f1_scores))

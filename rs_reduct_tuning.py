@@ -15,6 +15,6 @@ def reduct_tuning(reducts, train_X, train_y, test_X, test_y, nfolds):
     grid_result = []
     
     for i in range(len(reducts)):
-        grid_result.append(svm_tuning(train_X[:, reducts[i]], train_y, test_X[:, reducts[i]], test_y, nfolds))
+        grid_result.append(svm_tuning(train_X.loc[:, reducts[i]], train_y, test_X.loc[:, reducts[i]], test_y, nfolds))
         
     return grid_result

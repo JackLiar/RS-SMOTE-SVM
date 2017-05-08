@@ -18,8 +18,8 @@ from sklearn.metrics import confusion_matrix
 # 寻找SVM最优参数和F-measure Score
 def svm_tuning(X, y, nfolds):
     '''使用grid search 和 K-Fold validation 寻找最优参数'''
-    Cs = [pow(10, c) for c in range(-4,1)]
-    gammas = [pow(10, gamma) for gamma in range(-4,1)]
+    Cs = [pow(5, c) for c in range(-5,5)]
+    gammas = [pow(5, gamma) for gamma in range(-5,5)]
     param_grid = {'C': Cs, 'gamma' : gammas}
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5)
