@@ -6,7 +6,7 @@ Created on Sat Mar 25 19:19:05 2017
 
 @author: jack
 """
-from imblearn.over_sampling import SMOTE
+
 import numpy as np
 import os
 import pandas as pd
@@ -46,33 +46,19 @@ with open("./reduct.txt", 'r') as f:
     else:
         f.close()
         del line
-#Reducts = Reducts[30:]
+#Reducts = Reducts[15:]
 Reducts_len = len(Reducts)
 
 # 加载寻找最优属性约简模块
 from reduct_tuning import reduct_tuning
 
-result ,T= [] , 20
+result ,T= [] , 10
 start = time.time()
 for i in range(T):
-    
-#    # 使用SMOTE算法生成样本
-#    cd_train_res_X, cd_train_res_y = SMOTE(kind = 'svm').fit_sample(cdata, cdata_class)
-#
-#    # 数据标准化
-#    cd_train_res_X_scaled = StandardScaler().fit_transform(cd_train_res_X)
-#    del cd_train_res_X
-#    cd_train_res_X_scaled = pd.DataFrame(cd_train_res_X_scaled)  # 转换成DataFrame方便处理
-#    cd_train_res_y = pd.Series(cd_train_res_y)  # 转换成Series方便处理
-#    # 分割训练集数据集
-#    cd_train_X, cd_test_X, cd_train_y, cd_test_y = train_test_split(cdata, cdata_class, test_size=0.5)
-#    while sum(cd_train_y) <= 5 or sum(cd_train_y) >= 18:
-#        cd_train_X, cd_test_X, cd_train_y, cd_test_y = train_test_split(cdata, cdata_class, test_size=0.5)
-#    
-#    cd_train_X = cd_train_res_X_scaled.iloc[
-#        cd_train_res_y.index.difference(cd_test_y.index)]
-#    cd_train_y = cd_train_res_y.iloc[cd_train_res_y.index.difference(cd_test_y.index)]
-#    cd_test_X = cd_train_res_X_scaled.iloc[cd_test_y.index]
+    # 分割训练集数据集
+    cd_train_X, cd_test_X, cd_train_y, cd_test_y = train_test_split(cdata, cdata_class, test_size=0.5)
+    while sum(cd_train_y) <= 6 or sum(cd_train_y) >= 17:
+        cd_train_X, cd_test_X, cd_train_y, cd_test_y = train_test_split(cdata, cdata_class, test_size=0.5)
     
     print(i+1)
     result.append(reduct_tuning(Reducts, cdata, cdata_class, cdata_scaled, 5))
