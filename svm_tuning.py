@@ -27,9 +27,8 @@ def svm_tuning(train_X, train_y, test_X, test_y, nfolds):
     
     test_y_predict = pd.Series(grid_search.predict(test_X))
     
-    indices = test_y.index[np.array(test_y != test_y_predict, dtype=bool)]
-#    print(test_y_predict.index[[1,3,5,7,9]])
-#    print(test_y, test_y_predict)
+    indices = test_y.index[np.logical_and(test_y != test_y_predict, test_y == 1)]
+#    print(test_y.loc[indices])
 
 #    print(confusion_matrix(y_test, y_test_predict))
 #    print("Precision score is: ", precision_score(y_test, y_test_predict))

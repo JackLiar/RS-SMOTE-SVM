@@ -15,6 +15,7 @@ def reduct_tuning(reducts, X, y, X_scaled, nfolds):
     result = []
     
     for i in range(len(reducts)):
+        print('reduct: ', i)
         result.append(smote_svm(reducts[i], X, y, X_scaled, nfolds))
         
     return result
